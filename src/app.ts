@@ -1,3 +1,20 @@
+function Autobind() {
+  return function (
+    _0: any,
+    _1: string,
+    descriptor: PropertyDescriptor
+  ) {
+    const originalMethod = descriptor.value;
+    const adjDescriptor: PropertyDescriptor = {
+      configurable: true,
+      get () {
+        return originalMethod.bind(this);
+      }
+    }
+    return adjDescriptor;
+  };
+}
+
 class ProjectInput {
   private _templateElement: HTMLTemplateElement;
   private _hostElement: HTMLDivElement;
@@ -28,9 +45,10 @@ class ProjectInput {
 
   private configureForm(formElement: HTMLFormElement) {
     formElement.id = 'user-input';
-    formElement.addEventListener('submit', this.submitHandler.bind(this));
+    formElement.addEventListener('submit', this.submitHandler);
   }
 
+  @Autobind()
   private submitHandler(event: Event) {
     event.preventDefault();
     const formElement = event.target as HTMLFormElement;
