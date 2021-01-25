@@ -14,7 +14,7 @@ interface ValidityStatus {
 
 // Autobind is a decorator to assign the proper "this" to class methods that are event handlers, etc.
 function Autobind() {
-  return function (_0: any, _1: string, descriptor: PropertyDescriptor) {
+  return function (_0: unknown, _1: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
     const adjDescriptor: PropertyDescriptor = {
       configurable: true,
@@ -122,7 +122,7 @@ class ProjectInput {
   }
 
   private static validate(validatableInput: Validatable): ValidityStatus {
-    let status: ValidityStatus = { isValid: true, message: '' };
+    const status: ValidityStatus = { isValid: true, message: '' };
     const { value, name, isRequired, minSize, maxSize } = validatableInput;
     const trimmedValue = value ? value.toString().trim() : '';
     const hasValue = trimmedValue.length !== 0 || typeof value === 'number';
@@ -182,4 +182,5 @@ class ProjectInput {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const projectInput = new ProjectInput();
