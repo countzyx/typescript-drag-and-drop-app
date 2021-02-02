@@ -1,3 +1,10 @@
+interface ProjectInfo {
+  id: number;
+  title: string;
+  description: string;
+  peopleCount: number;
+}
+
 // Validatable is an inteface to describe validation requirements for input values.
 interface Validatable {
   value?: string | number;
@@ -26,12 +33,12 @@ function Autobind() {
   };
 }
 
-// ProjectInput is the controller for this page.
+// ProjectInput
 class ProjectInput {
   private _templateElement: HTMLTemplateElement;
   private _hostElement: HTMLDivElement;
 
-  constructor() {
+  constructor(private _projectState: ProjectState) {
     this._templateElement = document.getElementById('project-input') as HTMLTemplateElement;
     if (!this._templateElement) {
       throw Error('No "project-input" element defined on the page.');
@@ -61,9 +68,9 @@ class ProjectInput {
   }
 
   private gatherUserInput(formElement: HTMLFormElement): [string?, string?, number?] | ValidityStatus {
-    let title: string | undefined = undefined;
-    let description: string | undefined = undefined;
-    let peopleCount: number | undefined = undefined;
+    let title: string | undefined;
+    let description: string | undefined;
+    let peopleCount: number | undefined;
 
     const titleInputElement = formElement.querySelector('#title') as HTMLInputElement;
     if (titleInputElement) {
@@ -110,7 +117,7 @@ class ProjectInput {
     console.log(userInput);
     if (Array.isArray(userInput)) {
       const [title, description, peopleCount] = userInput;
-      console.log(title, description, peopleCount);
+      this._projectState.addProject(title || 'undefined', description || 'undefined', peopleCount || 0);
       this.clearInputs(formElement);
     } else {
       alert(userInput.message);
@@ -181,29 +188,34 @@ class ProjectInput {
 // ProjectList
 class ProjectList {
   private _templateElement: HTMLTemplateElement;
-  private _hostElement: HTMLDivElement;
+  private _sectionElement: HTMLElement;
+  private _listId: string;
 
-  constructor(private _listType: 'active' | 'finished') {
+  constructor(private _listType: 'active' | 'finished', private _projectState: ProjectState) {
+    this._listId = `${this._listType}-projects-list`;
     this._templateElement = document.getElementById('project-list') as HTMLTemplateElement;
     if (!this._templateElement) {
       throw Error('No "project-list" element defined on the page.');
     }
 
-    this._hostElement = document.getElementById('app') as HTMLDivElement;
-    if (!this._hostElement) {
+    const hostElement = document.getElementById('app') as HTMLDivElement;
+    if (!hostElement) {
       throw Error('No "app" element defined on the page.');
     }
 
     const importedNode = document.importNode(this._templateElement.content, true);
-    const sectionElement = importedNode.firstElementChild as HTMLElement;
-    if (!sectionElement) {
+    this._sectionElement = importedNode.firstElementChild as HTMLElement;
+    if (!this._sectionElement) {
       throw Error('No section element inside the project list template.');
     }
-    sectionElement.id = `${_listType}-projects`;
+    this._sectionElement.id = `${_listType}-projects`;
+    hostElement.insertAdjacentElement('beforeend', this._sectionElement);
 
-    this._hostElement.insertAdjacentElement('beforeend', sectionElement);
+    this._projectState.addListener((projects: ProjectInfo[]) => {
+      this.renderProjects(projects);
+    });
 
-    this.renderContent(sectionElement);
+    this.renderContent(this._sectionElement);
   }
 
   private renderContent(sectionElement: HTMLElement) {
@@ -211,8 +223,8 @@ class ProjectList {
     if (!sectionList) {
       throw Error('Cannot find UL inside the section element');
     }
-    const listId = `${this._listType}-projects-list`;
-    sectionList.id = listId;
+
+    sectionList.id = this._listId;
 
     const sectionHeadline = sectionElement.querySelector('h2') as HTMLElement;
     if (!sectionHeadline) {
@@ -220,11 +232,68 @@ class ProjectList {
     }
     sectionHeadline.textContent = this._listType.toUpperCase() + ' PROJECTS';
   }
+
+  private renderProjects(projects: ProjectInfo[]) {
+    if (!projects.length) {
+      return;
+    }
+
+    const listElement = this._sectionElement.querySelector('#' + this._listId) as HTMLUListElement;
+    if (!listElement) {
+      throw Error(`Cannot find ${this._listId} list`);
+    }
+    while (listElement.lastChild) {
+      listElement.removeChild(listElement.lastChild);
+    }
+    for (const project of projects) {
+      const listItem = document.createElement('li');
+      listItem.textContent = project.title;
+      listElement.appendChild(listItem);
+    }
+  }
 }
 
+// ProjectState is the controller for this page.
+class ProjectState {
+  private static _instance: ProjectState;
+  private _lastId = 0;
+  private _listeners: Array<(projects: ProjectInfo[]) => void> = [];
+  private _projects: ProjectInfo[] = [];
+
+  private constructor() {}
+
+  static getInstance() {
+    if (!this._instance) {
+      this._instance = new ProjectState();
+    }
+
+    return this._instance;
+  }
+
+  addListener(listener: (projects: ProjectInfo[]) => void) {
+    this._listeners.push(listener);
+  }
+
+  addProject(title: string, description: string, peopleCount: number) {
+    this._lastId++;
+    const newProject: ProjectInfo = {
+      id: this._lastId,
+      title: title,
+      description: description,
+      peopleCount: peopleCount,
+    };
+    this._projects.push(newProject);
+    for (const listener of this._listeners) {
+      listener(this._projects.slice());
+    }
+  }
+}
+
+const projectState = ProjectState.getInstance();
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const projectInput = new ProjectInput();
+const projectInput = new ProjectInput(projectState);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const activeProjectList = new ProjectList('active');
+const activeProjectList = new ProjectList('active', projectState);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const finishedProjectList = new ProjectList('finished');
+const finishedProjectList = new ProjectList('finished', projectState);
