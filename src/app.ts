@@ -45,13 +45,9 @@ class ProjectInput {
     const importedNode = document.importNode(this._templateElement.content, true);
     const formElement = importedNode.firstElementChild as HTMLFormElement;
     if (!formElement) {
-      throw Error('No form element inside template.');
+      throw Error('No form element inside the project input template.');
     }
     this.configureForm(formElement);
-    this.attach(formElement);
-  }
-
-  private attach(formElement: HTMLFormElement) {
     this._hostElement.insertAdjacentElement('afterbegin', formElement);
   }
 
@@ -182,5 +178,53 @@ class ProjectInput {
   }
 }
 
+// ProjectList
+class ProjectList {
+  private _templateElement: HTMLTemplateElement;
+  private _hostElement: HTMLDivElement;
+
+  constructor(private _listType: 'active' | 'finished') {
+    this._templateElement = document.getElementById('project-list') as HTMLTemplateElement;
+    if (!this._templateElement) {
+      throw Error('No "project-list" element defined on the page.');
+    }
+
+    this._hostElement = document.getElementById('app') as HTMLDivElement;
+    if (!this._hostElement) {
+      throw Error('No "app" element defined on the page.');
+    }
+
+    const importedNode = document.importNode(this._templateElement.content, true);
+    const sectionElement = importedNode.firstElementChild as HTMLElement;
+    if (!sectionElement) {
+      throw Error('No section element inside the project list template.');
+    }
+    sectionElement.id = `${_listType}-projects`;
+
+    this._hostElement.insertAdjacentElement('beforeend', sectionElement);
+
+    this.renderContent(sectionElement);
+  }
+
+  private renderContent(sectionElement: HTMLElement) {
+    const sectionList = sectionElement.querySelector('ul') as HTMLUListElement;
+    if (!sectionList) {
+      throw Error('Cannot find UL inside the section element');
+    }
+    const listId = `${this._listType}-projects-list`;
+    sectionList.id = listId;
+
+    const sectionHeadline = sectionElement.querySelector('h2') as HTMLElement;
+    if (!sectionHeadline) {
+      throw Error('Cannot find H2 inside the section element');
+    }
+    sectionHeadline.textContent = this._listType.toUpperCase() + ' PROJECTS';
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const projectInput = new ProjectInput();
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const activeProjectList = new ProjectList('active');
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const finishedProjectList = new ProjectList('finished');
