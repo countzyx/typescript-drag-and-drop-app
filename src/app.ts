@@ -41,29 +41,35 @@ function Autobind() {
   };
 }
 
+// Component
+abstract class Component<T extends HTMLElement> {
+  protected templateElement: HTMLTemplateElement;
+  protected hostElement: T;
+
+  constructor(templateId: string, hostId: string) {
+    this.templateElement = document.getElementById(templateId) as HTMLTemplateElement;
+    if (!this.templateElement) {
+      throw Error(`No template element named "${templateId}" defined on the page.`);
+    }
+
+    this.hostElement = document.getElementById(hostId) as T;
+    if (!this.hostElement) {
+      throw Error(`No host element named "${hostId}" defined on the page.`);
+    }
+  }
+}
+
 // ProjectInput
-class ProjectInput {
-  private _templateElement: HTMLTemplateElement;
-  private _hostElement: HTMLDivElement;
-
+class ProjectInput extends Component<HTMLDivElement> {
   constructor(private _projectState: ProjectState) {
-    this._templateElement = document.getElementById('project-input') as HTMLTemplateElement;
-    if (!this._templateElement) {
-      throw Error('No "project-input" element defined on the page.');
-    }
-
-    this._hostElement = document.getElementById('app') as HTMLDivElement;
-    if (!this._hostElement) {
-      throw Error('No "app" element defined on the page.');
-    }
-
-    const importedNode = document.importNode(this._templateElement.content, true);
+    super('project-input', 'app');
+    const importedNode = document.importNode(this.templateElement.content, true);
     const formElement = importedNode.firstElementChild as HTMLFormElement;
     if (!formElement) {
       throw Error('No form element inside the project input template.');
     }
     this.configureForm(formElement);
-    this._hostElement.insertAdjacentElement('afterbegin', formElement);
+    this.hostElement.insertAdjacentElement('afterbegin', formElement);
   }
 
   private clearInputs(formElement: HTMLFormElement) {
@@ -194,30 +200,21 @@ class ProjectInput {
 }
 
 // ProjectList
-class ProjectList {
-  private _templateElement: HTMLTemplateElement;
+class ProjectList extends Component<HTMLDivElement> {
   private _sectionElement: HTMLElement;
   private _listId: string;
 
   constructor(private _listType: 'active' | 'finished', private _projectState: ProjectState) {
+    super('project-list', 'app');
     this._listId = `${this._listType}-projects-list`;
-    this._templateElement = document.getElementById('project-list') as HTMLTemplateElement;
-    if (!this._templateElement) {
-      throw Error('No "project-list" element defined on the page.');
-    }
 
-    const hostElement = document.getElementById('app') as HTMLDivElement;
-    if (!hostElement) {
-      throw Error('No "app" element defined on the page.');
-    }
-
-    const importedNode = document.importNode(this._templateElement.content, true);
+    const importedNode = document.importNode(this.templateElement.content, true);
     this._sectionElement = importedNode.firstElementChild as HTMLElement;
     if (!this._sectionElement) {
       throw Error('No section element inside the project list template.');
     }
     this._sectionElement.id = `${_listType}-projects`;
-    hostElement.insertAdjacentElement('beforeend', this._sectionElement);
+    this.hostElement.insertAdjacentElement('beforeend', this._sectionElement);
 
     this._projectState.addListener((projects: ProjectInfo[]) => {
       const filteredProjects = projects.filter((p) => {
