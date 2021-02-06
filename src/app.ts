@@ -1,7 +1,7 @@
 type ProjectStatus = 'active' | 'finished';
 const kActive: ProjectStatus = 'active';
 const kFinished: ProjectStatus = 'finished';
-type Listener = (projects: ProjectInfo[]) => void;
+type Listener<T> = (projects: T[]) => void;
 
 class ProjectInfo {
   constructor(
@@ -261,14 +261,23 @@ class ProjectList extends Component<HTMLDivElement> {
   }
 }
 
-// ProjectState is the controller for this page.
-class ProjectState {
+class State<T> {
+  protected listeners: Listener<T>[] = [];
+
+  addListener(listener: Listener<T>) {
+    this.listeners.push(listener);
+  }
+}
+
+// ProjectState
+class ProjectState extends State<ProjectInfo> {
   private static _instance: ProjectState;
   private _lastId = 0;
-  private _listeners: Listener[] = [];
   private _projects: ProjectInfo[] = [];
 
-  private constructor() {}
+  private constructor() {
+    super();
+  }
 
   static getInstance() {
     if (!this._instance) {
@@ -276,10 +285,6 @@ class ProjectState {
     }
 
     return this._instance;
-  }
-
-  addListener(listener: Listener) {
-    this._listeners.push(listener);
   }
 
   addProject(title: string, description: string, peopleCount: number) {
@@ -292,7 +297,7 @@ class ProjectState {
       status: kActive,
     };
     this._projects.push(newProject);
-    for (const listener of this._listeners) {
+    for (const listener of this.listeners) {
       listener(this._projects.slice());
     }
   }
