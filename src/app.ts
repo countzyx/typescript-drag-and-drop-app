@@ -1,8 +1,16 @@
-interface ProjectInfo {
-  id: number;
-  title: string;
-  description: string;
-  peopleCount: number;
+type ProjectStatus = 'active' | 'finished';
+const kActive: ProjectStatus = 'active';
+const kFinished: ProjectStatus = 'finished';
+type Listener = (projects: ProjectInfo[]) => void;
+
+class ProjectInfo {
+  constructor(
+    public id: number,
+    public title: string,
+    public description: string,
+    public peopleCount: number,
+    public status: ProjectStatus
+  ) {}
 }
 
 // Validatable is an inteface to describe validation requirements for input values.
@@ -212,7 +220,10 @@ class ProjectList {
     hostElement.insertAdjacentElement('beforeend', this._sectionElement);
 
     this._projectState.addListener((projects: ProjectInfo[]) => {
-      this.renderProjects(projects);
+      const filteredProjects = projects.filter((p) => {
+        return p.status === this._listType;
+      });
+      this.renderProjects(filteredProjects);
     });
 
     this.renderContent(this._sectionElement);
@@ -257,7 +268,7 @@ class ProjectList {
 class ProjectState {
   private static _instance: ProjectState;
   private _lastId = 0;
-  private _listeners: Array<(projects: ProjectInfo[]) => void> = [];
+  private _listeners: Listener[] = [];
   private _projects: ProjectInfo[] = [];
 
   private constructor() {}
@@ -270,7 +281,7 @@ class ProjectState {
     return this._instance;
   }
 
-  addListener(listener: (projects: ProjectInfo[]) => void) {
+  addListener(listener: Listener) {
     this._listeners.push(listener);
   }
 
@@ -281,6 +292,7 @@ class ProjectState {
       title: title,
       description: description,
       peopleCount: peopleCount,
+      status: kActive,
     };
     this._projects.push(newProject);
     for (const listener of this._listeners) {
