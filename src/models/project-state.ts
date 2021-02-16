@@ -1,4 +1,4 @@
-import { kActive, ProjectInfo, ProjectStatus } from './project.js';
+import { kActive, ProjectInfo, ProjectStatus } from './project';
 
 export type Listener<T> = (projects: T[]) => void;
 

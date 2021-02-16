@@ -1,9 +1,9 @@
-import { Component } from './base-component.js';
-import { DropOnable, kDataTextFormat } from '../models/drag-drop.js';
-import { ProjectInfo, ProjectStatus } from '../models/project.js';
-import { ProjectState } from '../models/project-state.js';
-import { ProjectItem } from './project-item.js';
-import { Autobind } from '../utility/decorators/autobind.js';
+import { Component } from './base-component';
+import { DropOnable, kDataTextFormat } from '../models/drag-drop';
+import { ProjectInfo, ProjectStatus } from '../models/project';
+import { ProjectState } from '../models/project-state';
+import { ProjectItem } from './project-item';
+import { Autobind } from '../utility/decorators/autobind';
 
 // ProjectList
 export class ProjectList extends Component<HTMLDivElement, HTMLElement> implements DropOnable {

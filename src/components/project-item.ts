@@ -1,7 +1,7 @@
-import { Component } from './base-component.js';
-import { Draggable, kDataTextFormat } from '../models/drag-drop.js';
-import { ProjectInfo } from '../models/project.js';
-import { Autobind } from '../utility/decorators/autobind.js';
+import { Component } from './base-component';
+import { Draggable, kDataTextFormat } from '../models/drag-drop';
+import { ProjectInfo } from '../models/project';
+import { Autobind } from '../utility/decorators/autobind';
 
 // ProjectItem
 export class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> implements Draggable {
