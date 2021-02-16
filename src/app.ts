@@ -42,9 +42,10 @@ function Autobind() {
 }
 
 // Component
-abstract class Component<T extends HTMLElement> {
+abstract class Component<T extends HTMLElement, U extends HTMLElement> {
   protected templateElement: HTMLTemplateElement;
   protected hostElement: T;
+  protected componentElement: U;
 
   constructor(templateId: string, hostId: string) {
     this.templateElement = document.getElementById(templateId) as HTMLTemplateElement;
@@ -56,29 +57,36 @@ abstract class Component<T extends HTMLElement> {
     if (!this.hostElement) {
       throw Error(`No host element named "${hostId}" defined on the page.`);
     }
+
+    const importedNode = document.importNode(this.templateElement.content, true);
+    this.componentElement = importedNode.firstElementChild as U;
+    if (!this.componentElement) {
+      throw Error(`No ${typeof this.componentElement} inside the ${templateId} template.`);
+    }
   }
+
+  protected abstract renderContent(): void;
 }
 
 // ProjectInput
-class ProjectInput extends Component<HTMLDivElement> {
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
   constructor(private _projectState: ProjectState) {
     super('project-input', 'app');
-    const importedNode = document.importNode(this.templateElement.content, true);
-    const formElement = importedNode.firstElementChild as HTMLFormElement;
-    if (!formElement) {
-      throw Error('No form element inside the project input template.');
-    }
-    this.configureForm(formElement);
-    this.hostElement.insertAdjacentElement('afterbegin', formElement);
+    this.configureForm();
+    this.renderContent();
+  }
+
+  protected renderContent() {
+    this.hostElement.insertAdjacentElement('afterbegin', this.componentElement);
   }
 
   private clearInputs(formElement: HTMLFormElement) {
     formElement.reset();
   }
 
-  private configureForm(formElement: HTMLFormElement) {
-    formElement.id = 'user-input';
-    formElement.addEventListener('submit', this.submitHandler);
+  private configureForm() {
+    this.componentElement.id = 'user-input';
+    this.componentElement.addEventListener('submit', this.submitHandler);
   }
 
   private gatherUserInput(formElement: HTMLFormElement): [string?, string?, number?] | ValidityStatus {
@@ -199,22 +207,51 @@ class ProjectInput extends Component<HTMLDivElement> {
   }
 }
 
+// ProjectItem
+class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+  constructor(hostId: string, private _project: ProjectInfo) {
+    super('single-project', hostId);
+
+    this.renderContent();
+  }
+
+  protected renderContent() {
+    this.hostElement.insertAdjacentElement('beforeend', this.componentElement);
+    const nameElement = this.componentElement.querySelector('h2');
+    if (!nameElement) {
+      throw Error(`Cannot find H2 inside the list element "${this._project.title}" (id: ${this._project.id})`);
+    }
+
+    const peopleCountElement = this.componentElement.querySelector('h3');
+    if (!peopleCountElement) {
+      throw Error(`Cannot find H3 inside the list element "${this._project.title}" (id: ${this._project.id})`);
+    }
+
+    const descriptionElement = this.componentElement.querySelector('p') as HTMLParagraphElement;
+    if (!descriptionElement) {
+      throw Error(`Cannot find P inside the list element "${this._project.title}" (id: ${this._project.id})`);
+    }
+
+    nameElement.textContent = this._project.title;
+    peopleCountElement.textContent = this._project.peopleCount.toString();
+    descriptionElement.textContent = this._project.description;
+  }
+}
+
 // ProjectList
-class ProjectList extends Component<HTMLDivElement> {
-  private _sectionElement: HTMLElement;
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
   private _listId: string;
 
   constructor(private _listType: 'active' | 'finished', private _projectState: ProjectState) {
     super('project-list', 'app');
     this._listId = `${this._listType}-projects-list`;
+    this.componentElement.id = `${_listType}-projects`;
 
-    const importedNode = document.importNode(this.templateElement.content, true);
-    this._sectionElement = importedNode.firstElementChild as HTMLElement;
-    if (!this._sectionElement) {
-      throw Error('No section element inside the project list template.');
-    }
-    this._sectionElement.id = `${_listType}-projects`;
-    this.hostElement.insertAdjacentElement('beforeend', this._sectionElement);
+    this.renderContent();
+  }
+
+  protected renderContent() {
+    this.hostElement.insertAdjacentElement('beforeend', this.componentElement);
 
     this._projectState.addListener((projects: ProjectInfo[]) => {
       const filteredProjects = projects.filter((p) => {
@@ -223,18 +260,14 @@ class ProjectList extends Component<HTMLDivElement> {
       this.renderProjects(filteredProjects);
     });
 
-    this.renderContent(this._sectionElement);
-  }
-
-  private renderContent(sectionElement: HTMLElement) {
-    const sectionList = sectionElement.querySelector('ul') as HTMLUListElement;
+    const sectionList = this.componentElement.querySelector('ul') as HTMLUListElement;
     if (!sectionList) {
       throw Error('Cannot find UL inside the section element');
     }
 
     sectionList.id = this._listId;
 
-    const sectionHeadline = sectionElement.querySelector('h2') as HTMLElement;
+    const sectionHeadline = this.componentElement.querySelector('h2') as HTMLElement;
     if (!sectionHeadline) {
       throw Error('Cannot find H2 inside the section element');
     }
@@ -246,7 +279,7 @@ class ProjectList extends Component<HTMLDivElement> {
       return;
     }
 
-    const listElement = this._sectionElement.querySelector('#' + this._listId) as HTMLUListElement;
+    const listElement = this.componentElement.querySelector('#' + this._listId) as HTMLUListElement;
     if (!listElement) {
       throw Error(`Cannot find ${this._listId} list`);
     }
@@ -254,9 +287,7 @@ class ProjectList extends Component<HTMLDivElement> {
       listElement.removeChild(listElement.lastChild);
     }
     for (const project of projects) {
-      const listItem = document.createElement('li');
-      listItem.textContent = project.title;
-      listElement.appendChild(listItem);
+      new ProjectItem(this._listId, project);
     }
   }
 }
