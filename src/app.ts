@@ -3,6 +3,17 @@ const kActive: ProjectStatus = 'active';
 const kFinished: ProjectStatus = 'finished';
 type Listener<T> = (projects: T[]) => void;
 
+interface Draggable {
+  dragStartHandler: (event: DragEvent) => void;
+  dragEndHandler: (event: DragEvent) => void;
+}
+
+interface DropOnable {
+  dragOverHandler: (event: DragEvent) => void;
+  dragLeaveHandler: (event: DragEvent) => void;
+  dropHandler: (event: DragEvent) => void;
+}
+
 class ProjectInfo {
   constructor(
     public id: number,
@@ -208,7 +219,7 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
 }
 
 // ProjectItem
-class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> implements Draggable {
   get peopleCountText() {
     return this._project.peopleCount === 1 ? '1 person assigned' : `${this._project.peopleCount} people assigned`;
   }
@@ -217,6 +228,16 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
     super('single-project', hostId);
 
     this.renderContent();
+  }
+
+  @Autobind()
+  dragStartHandler(event: DragEvent) {
+    console.log(event);
+  }
+
+  @Autobind()
+  dragEndHandler(event: DragEvent) {
+    console.log(event);
   }
 
   protected renderContent() {
@@ -239,6 +260,10 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
     nameElement.textContent = this._project.title;
     peopleCountElement.textContent = this.peopleCountText;
     descriptionElement.textContent = this._project.description;
+
+    this.componentElement.draggable = true;
+    this.componentElement.addEventListener('dragstart', this.dragStartHandler);
+    this.componentElement.addEventListener('dragend', this.dragEndHandler);
   }
 }
 
