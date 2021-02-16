@@ -209,6 +209,10 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
 
 // ProjectItem
 class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+  get peopleCountText() {
+    return this._project.peopleCount === 1 ? '1 person assigned' : `${this._project.peopleCount} people assigned`;
+  }
+
   constructor(hostId: string, private _project: ProjectInfo) {
     super('single-project', hostId);
 
@@ -233,7 +237,7 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
     }
 
     nameElement.textContent = this._project.title;
-    peopleCountElement.textContent = this._project.peopleCount.toString();
+    peopleCountElement.textContent = this.peopleCountText;
     descriptionElement.textContent = this._project.description;
   }
 }
