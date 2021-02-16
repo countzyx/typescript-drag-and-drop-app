@@ -12,12 +12,17 @@ settings:
     typescript:
 rules:
   no-use-before-define: 'off'
+  no-unused-vars: 'off'
   '@typescript-eslint/indent':
     - 2
     - 2
   '@typescript-eslint/no-empty-function':
-    - 'error'
+    - error
     - allow:
         - 'private-constructors'
   '@typescript-eslint/no-use-before-define':
-    - 'error'
+    - error
+  '@typescript-eslint/no-unused-vars':
+    - warn:
+      'argsIgnorePattern': '^_'
+      'ignoreRestSiblings': true
